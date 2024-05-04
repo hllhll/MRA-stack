@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  snapcast-client:
+    restart: unless-stopped
+    network_mode: host
+    container_name: snapcast-client
+    image: nolte/snapcast-client
+  snapcast:
+    restart: unless-stopped
+    build:
+      context: ./snapcast-server
+    container_name: snapcast-server
+    network_mode: host
+    ports:
+      - 1704:1704
+      - 1705:1705
+      - 1780:1780
+    # Note source cannot be configured via command line, defults to pipe:///tmp/snapfifo?
+    volumes:
+      - soundshare:/tmp/
+  # I have made changes to the mopidy docker, it's here: https://github.com/hllhll/docker-mopidy
+  mopidy:
+    restart: unless-stopped
+    build: 
+      context: ./docker-mopidy-hll
+    depends_on:
+      - snapcast      
+    ports:
+      - 6600:6600
+      - 6680:6680
+    command: ["--config", "/config/mopidy.conf"]
+    volumes:
+      - soundshare:/tmp/
+      - ./mopidy/mopidy-master.conf:/var/lib/mopidy/.config/mopidy/mopidy.conf:ro
+    network_mode: host  
+# Some items borrowed from https://github.com/nolte/docker_compose-audiostation/blob/master/docker-compose-rpi.yml
+# maybe "pipe" cannot be transfered over a bind mount?
+volumes:  
+  soundshare:
